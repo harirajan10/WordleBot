@@ -4,7 +4,7 @@ import time
 with open('words.txt') as f:
     FIVE_LETTER_WORDS = f.read().splitlines()
 
-PRINT_CHAR_DELAY = 0
+PRINT_CHAR_DELAY = 0.02
 ORDINAL_NUMBERS_STRING_MAP = {1 : "first", 2: "second", 3: "third", 4: "fourth", 5: "fifth", 6: "last" }
 
 # General Utils
@@ -107,7 +107,7 @@ def get_next_guess_words(letter_possibilities_map, letters_in_word, possible_wor
     candidate_guesses = [k for k, v in possible_words_map.items() if v == minval and word_possible(k, letter_possibilities_map, letters_in_word)]
     if len(candidate_guesses) > 0:
         ret = []
-        for i in range(0,3):
+        for i in range(0, min(len(candidate_guesses), 3)):
             ret.append((candidate_guesses[i], minval))
         return ret
 
