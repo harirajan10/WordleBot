@@ -11,4 +11,4 @@ This is a fun little project to help you keep your Wordle streaks alive. Run
 python3 WordleBot.py
 ```
 
-from this directory and the bot will guid you through the days Wordle. 
+from this directory and the bot will guide you through the days Wordle. 
