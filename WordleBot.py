@@ -93,6 +93,7 @@ def get_next_guess_words(letter_possibilities_map, letters_in_word, possible_wor
     # see how many possibe words would be left
     # return the word(s) with the lowest number of possible words
     possible_words_map = {}
+    possible_words_map_db = {}
     for word in FIVE_LETTER_WORDS:
         # TODO: fix this logic to address the letters not in new_letters
         new_letters = [char for char in word if char not in letters_in_word]
@@ -101,17 +102,23 @@ def get_next_guess_words(letter_possibilities_map, letters_in_word, possible_wor
             next_letter_possibilities_map.pop(letter, None)
         next_possible_words = [w for w in possible_words if word_possible(w, next_letter_possibilities_map, letters_in_word)]
         possible_words_map[word] = len(next_possible_words)
+        possible_words_map_db[word] = next_possible_words
 
     # Prefer to suggest a word its also a possible word
     minval = min(possible_words_map.values())
     candidate_guesses = [k for k, v in possible_words_map.items() if v == minval and word_possible(k, letter_possibilities_map, letters_in_word)]
+
+    # debug
+    if minval == 0:
+        db_arr = [(w, possible_words_map_db[w]) for w, v in possible_words_map.items() if v == minval]
+        # print(db_arr)
     if len(candidate_guesses) > 0:
         ret = []
         for i in range(0, min(len(candidate_guesses), 3)):
             ret.append((candidate_guesses[i], minval))
         return ret
-
-    possible_words_map = sorted(possible_words_map.items(), key=lambda x: x[1], reverse=False)
+    possible_words_map = [(k,v) for (k,v) in possible_words_map.items() if v != 0 or word_possible(k, letter_possibilities_map, letters_in_word)]
+    possible_words_map = sorted(possible_words_map, key=lambda x: x[1], reverse=False)
     return possible_words_map[:4]
 
 
