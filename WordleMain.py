@@ -1,3 +1,15 @@
+from WordleBot import *
+from WordlePlay import *
+from WordleUtils import *
+
+# Main Logic Helper Fucntions
+
+def validate_game_choice_input(input):
+    if input not in ['1', '2']:
+        print_chars("Hmm, let's try again. Would you like to (1) play Wordle, (2) play Wordle with Hari's Wordle Bot, or (3) just use Hari's Wordle Bot?")  
+        return validate_game_choice_input(input())
+    return input
+
 # Main 
 
 def main():
@@ -11,20 +23,14 @@ def main():
     print('\n')
     candidate_starter_words = get_candidate_starter_words(10)
     print_chars("Welcome to Hari's Wordle Bot!\n")
-    print_chars("Let's get started by giving you a few options for a starter word. Here are some good options: \n")
-    for word in candidate_starter_words:
-        if (word == candidate_starter_words[-1]):
-            print_chars(word + "\n")
-        else:
-            print_chars(word + ", ")
-    print_chars("Go ahead and choose one of the recommended starter words, or choose your own word to start with!\n")
-    print_chars("What word did you choose to start with?\n")
-    starter_word = input()
-    starter_word = validate_word(starter_word)
-    letter_possibilities_map = {}
-    for letter in "abcdefghijklmnopqrstuvwxyz":
-        letter_possibilities_map[letter] = [0, 1, 2, 3, 4, 5, 6]
-    main_loop(starter_word, 1, letter_possibilities_map, set([]), FIVE_LETTER_WORDS)
+    print_chars("Would you like to (1) play Wordle or (2) just use Hari's Wordle Bot?\n")
+    game_choice = validate_game_choice_input(input())
+    if game_choice == '1':
+        play_game(False)
+    elif game_choice == '2':
+        start_bot()
+    else:
+        raise Exception("Invalid game choice. Exiting progam.")
 
 if __name__ == "__main__":
     main()
