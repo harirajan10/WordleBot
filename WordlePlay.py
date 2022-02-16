@@ -12,13 +12,13 @@ def validate_bot_choice_input(input):
     return input
 
 def validate_guess_word_input(guess_word):
-    if guess_word not in FIVE_LETTER_WORDS:
+    if guess_word not in CANDIDATE_GUESS_WORDS:
         print_chars("Hmm, that guess seems to be invalid, try another guess. Make sure your guess is a valid five letter word in the English dictionary.\n")  
         return validate_guess_word_input(input())
     return guess_word
 
 def get_secret_word():
-    return random.sample(FIVE_LETTER_WORDS, 1)[0]
+    return random.sample(CANDIDATE_SECRET_WORDS, 1)[0]
 
 # Main 
 
@@ -52,7 +52,7 @@ def play_game(debug):
             print_chars("Secret word is " + secret_word +"\n")
         print_chars("Alright! I've thought of my secret word!\n")
         if bot_choice == 'Y':
-            main_loop(secret_word, 1, "", "", init_possibilities_map(), {}, FIVE_LETTER_WORDS, True)
+            main_loop(secret_word, 1, "", "", init_possibilities_map(), {}, CANDIDATE_SECRET_WORDS, True)
         else:
             main_loop(secret_word, 1)
     else:

@@ -3,7 +3,7 @@ import random
 import time 
 from WordleUtils import *
 
-with open('first_guess_words.txt') as f:
+with open('candidate_starter_words.txt') as f:
     CANDIDATE_STARTER_WORDS = f.read().splitlines()
 
 # Bot Util Functions
@@ -26,7 +26,7 @@ def get_character_count_map(words):
     return char_count_map
 
 def get_most_common_chars():
-    char_count_map = get_character_count_map(FIVE_LETTER_WORDS)
+    char_count_map = get_character_count_map(CANDIDATE_GUESS_WORDS)
     char_count_map = sorted(char_count_map.items(), key=lambda x: x[1], reverse=True)
     return [char for (char, count) in char_count_map]
 
@@ -35,7 +35,7 @@ def get_candidate_starter_words(num_words):
     return [CANDIDATE_STARTER_WORDS[0]] + random_candidate_start_words
         
 def validate_word(word):
-    if word not in FIVE_LETTER_WORDS:
+    if word not in CANDIDATE_GUESS_WORDS:
         print_chars("Hmm, " + word + " is not a five letter word in the dictionary. Try choosing another word: \n")
         new_word = input()
         return validate_word(new_word)
@@ -79,7 +79,7 @@ def filter_bad_guess_candidates(candidate_words, possibilities_map):
 
 def get_next_guess_words(possible_words, possibilities_map, known_letters_map):
     candidate_guess_word_scores = {}
-    candidate_guess_words = filter_bad_guess_candidates(FIVE_LETTER_WORDS, possibilities_map)
+    candidate_guess_words = filter_bad_guess_candidates(CANDIDATE_GUESS_WORDS, possibilities_map)
     for candidate_guess_word in candidate_guess_words:
         total_possibilities = 0
         clue_str_dict = {}
@@ -91,21 +91,20 @@ def get_next_guess_words(possible_words, possibilities_map, known_letters_map):
                 update_tracking_maps(candidate_guess_word, clue_str, next_possibilities_map, next_known_letter_map)
                 clue_str_dict[clue_str] = len(get_possible_words(possible_words, next_possibilities_map, next_known_letter_map))
             total_possibilities +=  clue_str_dict[clue_str]
-        # TODO: uprank words that are also valid possible words
-        if word_possible(candidate_guess_word, possibilities_map, known_letters_map):
-            candidate_guess_word_scores[candidate_guess_word] = 0.9 * total_possibilities
+        if word_possible(candidate_guess_word, possibilities_map, known_letters_map) and candidate_guess_word in CANDIDATE_SECRET_WORDS:
+            candidate_guess_word_scores[candidate_guess_word] = 0.8 * total_possibilities
         else:
             candidate_guess_word_scores[candidate_guess_word] = 1.0 * total_possibilities
     
     return sorted(candidate_guess_word_scores.items(), key=lambda item: item[1])
 
-def populate_first_guess_word_suggestions_quick():
+def populate_first_guess_word_suggestions_fast():
     common_chars = get_most_common_chars()
     # only consider words with only unique letters
     # assign point value based on letter frequency
     # choose num_words random words with low point value
     word_value_map = {}
-    for word in FIVE_LETTER_WORDS:
+    for word in CANDIDATE_GUESS_WORDS:
         if not unique_letters(word):
             continue
         word_point_value = 0
@@ -121,40 +120,27 @@ def populate_first_guess_word_suggestions_quick():
     first_guess_words_file.close()
 
 def populate_first_guess_word_suggestions_slow():
-    char_count_map = get_character_count_map(FIVE_LETTER_WORDS)
     word_value_map = {}
-    # filter out any words with repeat letters
-    candidate_starter_words = []
-    for word in FIVE_LETTER_WORDS:
-        if not all_chars_unique(word):
-            continue
-        # filter out words with ~>70th percentile word_char_frequency_score
-        word_char_frequency_score = 0
-        for letter in word:
-            word_char_frequency_score += char_count_map[letter]
-        if word_char_frequency_score > 9000:
-            continue
-        candidate_starter_words.append(word)
-    print("Calculating avg number of possibilities for " + str(len(candidate_starter_words)) + " candidate starter words")
-    for candidate_starter_word in candidate_starter_words:
+    print("Calculating avg number of possibilities for " + str(len(CANDIDATE_GUESS_WORDS)) + " candidate starter words")
+    for candidate_starter_word in CANDIDATE_GUESS_WORDS:
         total_possibilities = 0
         print("Calculating avg number of possibilities for guess_word: " + candidate_starter_word + '\n')
         clue_str_dict = {}
-        for potential_secret_word in FIVE_LETTER_WORDS:
+        for potential_secret_word in CANDIDATE_SECRET_WORDS:
             clue_str = get_result_clue_string(candidate_starter_word, potential_secret_word)
             if clue_str not in clue_str_dict:
                 possibilities_map = init_possibilities_map()
                 known_letter_map = {}
                 update_tracking_maps(candidate_starter_word, clue_str, possibilities_map, known_letter_map)
-                clue_str_dict[clue_str] = len(get_possible_words(FIVE_LETTER_WORDS, possibilities_map, known_letter_map))
+                clue_str_dict[clue_str] = len(get_possible_words(CANDIDATE_SECRET_WORDS, possibilities_map, known_letter_map))
             total_possibilities += clue_str_dict[clue_str]
         
-        word_value_map[candidate_starter_word] = (total_possibilities * 1.0) / len(FIVE_LETTER_WORDS)
+        word_value_map[candidate_starter_word] = (total_possibilities * 1.0) / len(CANDIDATE_SECRET_WORDS)
         print("starter_word: " + candidate_starter_word + ", value: " + str(word_value_map[candidate_starter_word]) + '\n')
     
     word_value_map = sorted(word_value_map.items(), key=lambda x: x[1], reverse=False)
     print(word_value_map[:25])
-    with open("first_guess_words.txt", "w") as first_guess_words_file:
+    with open("candidate_starter_words.txt", "w") as first_guess_words_file:
         for word, _ in word_value_map[:25]:
             first_guess_words_file.write(word + '\n')
     first_guess_words_file.close()
@@ -264,11 +250,11 @@ def test_bot():
     print("Testing Bot....")
     results = []
     guess_memo_table = {}
-    for secret_word in FIVE_LETTER_WORDS:
+    for secret_word in CANDIDATE_SECRET_WORDS:
         guess_number = 1
         guess_word = CANDIDATE_STARTER_WORDS[0]
         clue_str = get_result_clue_string(guess_word, secret_word)
-        possible_words = FIVE_LETTER_WORDS
+        possible_words = CANDIDATE_SECRET_WORDS
         possibilities_map = init_possibilities_map()
         known_letters_map = {}
         guess_words = [guess_word]
@@ -333,7 +319,7 @@ def start_bot():
     print_chars(BOT_SPEAKING + "What word did you choose to start with?\n")
     starter_word = input()
     starter_word = validate_word(starter_word)
-    main_loop(starter_word, 1, init_possibilities_map(), {}, FIVE_LETTER_WORDS)
+    main_loop(starter_word, 1, init_possibilities_map(), {}, CANDIDATE_SECRET_WORDS)
 
 if __name__ == "__main__":
     test_bot()

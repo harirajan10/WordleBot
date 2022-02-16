@@ -4,8 +4,13 @@ ORDINAL_NUMBERS_STRING_MAP = {1 : "first", 2: "second", 3: "third", 4: "fourth",
 PRINT_CHAR_DELAY = 0.02
 BOT_SPEAKING = ">> Hari's Wordle Bot: "
 
-with open('words.txt') as f:
-    FIVE_LETTER_WORDS = f.read().splitlines()
+with open('candidate_guess_words.txt') as f:
+    CANDIDATE_GUESS_WORDS = f.read().splitlines()
+    CANDIDATE_GUESS_WORDS = [w.lower() for w in CANDIDATE_GUESS_WORDS]
+
+with open('candidate_secret_words.txt') as f:
+    CANDIDATE_SECRET_WORDS = f.read().splitlines()
+    CANDIDATE_SECRET_WORDS = [w.lower() for w in CANDIDATE_SECRET_WORDS]
 
 def print_chars(string):
     for char in string:
