@@ -55,6 +55,13 @@ def validate_guess_result(guess_result):
             return validate_guess_result(new_guess_result)
     return guess_result
 
+def validate_secret_word(secret_word):
+    if secret_word not in CANDIDATE_SECRET_WORDS:
+        print_chars("Hmm, " + secret_word + " is not a a valid secret word. Try choosing another word: \n")
+        return validate_secret_word(input())
+    return secret_word
+
+
 def word_possible(word, possibilities_map, known_letters_map):
     for letter in known_letters_map:
         if word.count(letter) < len(known_letters_map[letter]):
@@ -81,8 +88,14 @@ def get_next_guess_words(possible_words, possibilities_map, known_letters_map):
     candidate_guess_word_scores = {}
     candidate_guess_words = filter_bad_guess_candidates(CANDIDATE_GUESS_WORDS, possibilities_map)
     for candidate_guess_word in candidate_guess_words:
+        guess_word_is_potential_secret_word = word_possible(candidate_guess_word, possibilities_map, known_letters_map) and candidate_guess_word in CANDIDATE_SECRET_WORDS
+        skip_guess_word = False
         total_possibilities = 0
         clue_str_dict = {}
+        guess_word_scores = sorted(candidate_guess_word_scores.values())
+        threshold_guess_word_score = 99999999
+        if len(guess_word_scores) > 5:
+            threshold_guess_word_score = guess_word_scores[5]
         for candidate_secret_word in possible_words:
             clue_str = get_result_clue_string(candidate_guess_word, candidate_secret_word)
             if clue_str not in clue_str_dict:
@@ -90,11 +103,14 @@ def get_next_guess_words(possible_words, possibilities_map, known_letters_map):
                 next_known_letter_map = copy.deepcopy(known_letters_map)
                 update_tracking_maps(candidate_guess_word, clue_str, next_possibilities_map, next_known_letter_map)
                 clue_str_dict[clue_str] = len(get_possible_words(possible_words, next_possibilities_map, next_known_letter_map))
-            total_possibilities +=  clue_str_dict[clue_str]
-        if word_possible(candidate_guess_word, possibilities_map, known_letters_map) and candidate_guess_word in CANDIDATE_SECRET_WORDS:
-            candidate_guess_word_scores[candidate_guess_word] = 0.8 * total_possibilities
-        else:
-            candidate_guess_word_scores[candidate_guess_word] = 1.0 * total_possibilities
+            total_possibilities +=  0.9 * clue_str_dict[clue_str] if guess_word_is_potential_secret_word else clue_str_dict[clue_str]
+            if total_possibilities > threshold_guess_word_score:
+                skip_guess_word = True
+                break
+        if skip_guess_word:
+            continue
+
+        candidate_guess_word_scores[candidate_guess_word] = 1.0 * total_possibilities
     
     return sorted(candidate_guess_word_scores.items(), key=lambda item: item[1])
 
@@ -242,7 +258,7 @@ def suggest_next_guess_word(guess_number, guess_word, clue_str, possibilities_ma
 
     if len(next_guess_words) > 1:
         print_chars(BOT_SPEAKING + "Some other good options would be: ")
-        print(next_guess_words[1:9])
+        print(next_guess_words[1:5])
 
 # Main 
 
@@ -250,6 +266,7 @@ def test_bot():
     print("Testing Bot....")
     results = []
     guess_memo_table = {}
+    # sampled_candidate_secret_words = random.sample(CANDIDATE_SECRET_WORDS, 200)
     for secret_word in CANDIDATE_SECRET_WORDS:
         guess_number = 1
         guess_word = CANDIDATE_STARTER_WORDS[0]
@@ -282,12 +299,12 @@ def test_bot():
         result_frequency_map[r] += 1
 
     print("Guess Number Frequencies: ")
-    print(sorted(result_frequency_map))
+    print(result_frequency_map)
     print("Average number of guesses: ")
     print(running_average)
     print("Win rate: ")
     failures = [x for x in results if x > 6]
-    print(len(failures) / float(len(results)))
+    print(1 - (len(failures) / float(len(results))))
 
 
 def main_loop(guess_word, guess_number, possibilities_map, known_letters_map, possible_words):
@@ -305,6 +322,33 @@ def main_loop(guess_word, guess_number, possibilities_map, known_letters_map, po
     print_chars("What word are you choosing to go with for your next guess?\n")
     next_guess_word = validate_word(input())
     main_loop(next_guess_word, guess_number + 1, possibilities_map, known_letters_map, possible_words)
+
+def play_against_bot():
+    print_chars("Go ahead and choose a secret word for Hari's Wordle Bot to guess:\n")
+    secret_word = validate_secret_word(input())
+    possible_words = CANDIDATE_SECRET_WORDS
+    possibilities_map = init_possibilities_map()
+    known_letters_map = {}
+    guess_number = 1
+    guess_result = ''
+    while guess_result != 'GGGGG':
+        if guess_number == 1:
+            guess_word = CANDIDATE_STARTER_WORDS[0]
+        elif guess_number > 6:
+            print_chars(BOT_SPEAKING + "Oh no! I couldn't guess your secret word :(\n")    
+            return
+        else:
+            update_tracking_maps(guess_word, guess_result, possibilities_map, known_letters_map)
+            possible_words = get_possible_words(possible_words, possibilities_map, known_letters_map)
+            next_guess_words = get_next_guess_words(possible_words, possibilities_map, known_letters_map)
+            guess_word, _ = next_guess_words[0]
+        print_chars(BOT_SPEAKING + "Alright, my " + ORDINAL_NUMBERS_STRING_MAP[guess_number] + " guess is " + guess_word + "!\n")
+        print_chars(BOT_SPEAKING + "How did I do? (Type 'B' for blank, 'G' for green, and 'Y' for yellow)\n")
+        guess_result = validate_guess_result(input())
+        if guess_result == 'GGGGG':
+            break    
+        guess_number += 1    
+    print_chars("Wooohooo! Hari's Wordle Bot guessed your secret word, " + secret_word + ", in " + str(guess_number) + " guesses!\n")
 
 def start_bot():
     candidate_starter_words = get_candidate_starter_words(10)

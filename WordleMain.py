@@ -23,11 +23,13 @@ def main():
     print('\n')
     candidate_starter_words = get_candidate_starter_words(10)
     print_chars("Welcome to Hari's Wordle Bot!\n")
-    print_chars("Would you like to (1) play Wordle or (2) just use Hari's Wordle Bot?\n")
+    print_chars("Would you like to (1) play Wordle, (2) play against Hari's Wordle Bot, or (3) just use Hari's Wordle Bot?\n")
     game_choice = validate_game_choice_input(input())
     if game_choice == '1':
         play_game(False)
     elif game_choice == '2':
+        play_against_bot()
+    elif game_choice == '3':
         start_bot()
     else:
         raise Exception("Invalid game choice. Exiting progam.")
