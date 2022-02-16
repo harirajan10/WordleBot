@@ -31,8 +31,8 @@ def get_most_common_chars():
     return [char for (char, count) in char_count_map]
 
 def get_candidate_starter_words(num_words):
-    random_candidate_start_words = random.sample(CANDIDATE_STARTER_WORDS, num_words)
-    return random_candidate_start_words
+    random_candidate_start_words = random.sample(CANDIDATE_STARTER_WORDS[1:], num_words)
+    return [CANDIDATE_STARTER_WORDS[0]] + random_candidate_start_words
         
 def validate_word(word):
     if word not in FIVE_LETTER_WORDS:
@@ -263,6 +263,7 @@ def suggest_next_guess_word(guess_number, guess_word, clue_str, possibilities_ma
 def test_bot():
     print("Testing Bot....")
     results = []
+    guess_memo_table = {}
     for secret_word in FIVE_LETTER_WORDS:
         guess_number = 1
         guess_word = CANDIDATE_STARTER_WORDS[0]
@@ -270,21 +271,24 @@ def test_bot():
         possible_words = FIVE_LETTER_WORDS
         possibilities_map = init_possibilities_map()
         known_letters_map = {}
-        first_guess_memo_table = {}
+        guess_words = [guess_word]
         while clue_str != 'GGGGG':
             update_tracking_maps(guess_word, clue_str, possibilities_map, known_letters_map)
             possible_words = get_possible_words(possible_words, possibilities_map, known_letters_map)
-            # for our second guess, we can look up what we've don for previous clue_strs since our first guess is always the same
-            if guess_number == 1 and clue_str in first_guess_memo_table:
-                guess_word = first_guess_memo_table[clue_str]
+            guess_words_string = "".join(guess_words)
+            guess_key = (guess_words_string, clue_str)
+            if guess_key in guess_memo_table:
+                guess_word = guess_memo_table[guess_key]
             else:
                 next_guess_words = get_next_guess_words(possible_words, possibilities_map, known_letters_map)
                 guess_word, _ = next_guess_words[0]
-                first_guess_memo_table[clue_str] = guess_word
+                guess_memo_table[(guess_key, clue_str)] = guess_word
             clue_str = get_result_clue_string(guess_word, secret_word)
+            guess_words.append(guess_word)
             guess_number += 1
-        print("secret_word: " + secret_word + " num_guesses: " + str(guess_number))
         results.append(guess_number)
+        running_average = sum(results) / float(len(results))
+        print("secret_word: " + secret_word + " num_guesses: " + str(guess_number) + " running_average: " + str(running_average))
     result_frequency_map = {}
     for r in results:
         if r not in result_frequency_map:
@@ -294,7 +298,7 @@ def test_bot():
     print("Guess Number Frequencies: ")
     print(sorted(result_frequency_map))
     print("Average number of guesses: ")
-    print(sum(results) / float(len(results)))
+    print(running_average)
     print("Win rate: ")
     failures = [x for x in results if x > 6]
     print(len(failures) / float(len(results)))
